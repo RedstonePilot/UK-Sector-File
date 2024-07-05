@@ -309,7 +309,7 @@ def remove_blank_ends() -> None:
 def are_colours_close(col1 : int, col2: int, threshold : int = 30) -> bool:
     rgb1 = conv_rgb(col1)
     rgb2 = conv_rgb(col2)
-    return sum((a-b) ** 2 for a,b in zip(rgb1,rgb2)**0.5) <= threshold
+    return sum((a-b) ** 2 for a,b in zip(rgb1,rgb2))** 0.5 <= threshold
 
 def compile_sf() -> bool:
     command = r" .\cli-windows-x64.exe --config-file ./compiler.config.json --no-wait"
@@ -327,9 +327,9 @@ def close_colours() -> None:
         data = file.read().splitlines()
     colours = [line[-1] for line in data if line.startswith("#define")]
     for i,colour1 in enumerate(colours):
-        for colour2 in colours[i+1]:
+        for colour2 in colours[i+1:]:
             if are_colours_close(colour1,colour2):
-                close.append(colour1,colour2)
+                close.append((colour1,colour2))
 
     with open("colse_colours.txt","w")as file:
         for pair in close:
