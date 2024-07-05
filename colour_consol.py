@@ -1,9 +1,9 @@
 import csv, glob,os,re,subprocess
 
 def conv_rgb(colour : int) -> tuple[int,int,int]:
-    red = colour & 0xff
-    green = (colour >> 8) & 0xff
-    blue = (colour >> 16) & 0xff
+    red = int(colour) & 0xff
+    green = (int(colour) >> 8) & 0xff
+    blue = (int(colour) >> 16) & 0xff
     return red,green,blue
 
 to_compress = {
