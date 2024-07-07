@@ -1,5 +1,6 @@
 import csv, glob,os,re,subprocess
-
+from PIL import Image, ImageDraw, ImageFont
+os.chdir(os.path.join(os.pardir, os.pardir, os.pardir, os.pardir))
 def conv_rgb(colour : int) -> tuple[int,int,int]:
     red = int(colour) & 0xff
     green = (int(colour) >> 8) & 0xff
@@ -306,7 +307,9 @@ def remove_blank_ends() -> None:
 
     print("Removed Blank Ends")
 
-def are_colours_close(col1 : int, col2: int, threshold : int = 30) -> bool:
+def are_colours_close(col1 : int, col2: int, threshold : int = 1) -> bool:
+    if col1 == col2:
+        return 0
     rgb1 = conv_rgb(col1)
     rgb2 = conv_rgb(col2)
     return sum((a-b) ** 2 for a,b in zip(rgb1,rgb2))** 0.5 <= threshold
@@ -321,27 +324,62 @@ def compile_sf() -> bool:
         print("There was an error")
         return 0
 
-def close_colours() -> None:
+def create_color_block(rgb : tuple[int,int,int], width : int =100, height : int =100) -> Image:
+    return Image.new("RGB", (width, height), color=rgb)
+
+def close_colours(display : bool = False) -> None:
     close = []
     with open("Colours.txt","r")as file:
         data = file.read().splitlines()
-    colours = [line[-1] for line in data if line.startswith("#define")]
-    for i,colour1 in enumerate(colours):
-        for colour2 in colours[i+1:]:
+    colours = [(line.split()[-2], line.split()[-1]) for line in data if line.startswith("#define")]
+    for i,(name1,colour1) in enumerate(colours):
+        for name2,colour2 in colours[i+1:]:
             if are_colours_close(colour1,colour2):
-                close.append((colour1,colour2))
+                close.append((name1,conv_rgb(colour1),name2,conv_rgb(colour2)))
 
-    with open("colse_colours.txt","w")as file:
-        for pair in close:
-            file.write(f"{pair}\n")
+    # with open("Close_Colours.txt","w")as file:
+    #     for pair in close:
+    #         file.write(f"{pair}\n")
+
+    if display:
+        img_width = 800
+        total_height = len(close) * 100
+        img = Image.new('RGB', (img_width, total_height), "white")
+        draw = ImageDraw.Draw(img)
+        font = ImageFont.truetype("arial.ttf",20)
+        for index, (name1, rgb1, name2, rgb2) in enumerate(close):
+            y_offset = index * 100
+            
+            draw.rectangle([0, y_offset, 99, y_offset + 99], fill=rgb1)
+            draw.rectangle([100, y_offset, 199, y_offset + 99], fill=rgb2)
+           
+            draw.text((205, y_offset + 40), f"{name1} / {name2}", fill="black", font=font)
+
+            
+
+        
+        #img.show("threshold_1.png")
+
+def clean_up() -> None:
+    to_remove = ["colours.csv","defs.csv"]
+    for file_path in to_remove:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"File {file_path} has been deleted.")
+        else:
+            print(f"The file {file_path} does not exist.")
+
+
 
 
 if __name__ == "__main__":
-    remove_unused()
     compress_colours()
     sort_colours()
     remove_blank_ends()
     sf_check = compile_sf()
+    remove_unused()
     check()
-    close_colours()
+    sf_check = compile_sf()
+    #close_colours(display=True)
+    clean_up()
     print("Completed")
