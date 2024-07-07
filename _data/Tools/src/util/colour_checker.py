@@ -16,7 +16,10 @@ to_compress = {
     ("smrBlue", "blueBackground") : "Blue",
     ("smrSCOGrass",) : "smrGreen",
     ("smrPFApron", "smrPFHoldLabels") : "smrPFGreyDark",
-    ("smrPFRwyOuter","smrPFStandLabels") : "smrPFGreyLight"
+    ("smrPFRwyOuter","smrPFStandLabels") : "smrPFGreyLight",
+    ("smrMDapron","smrMDrunway") : "smrMDGreyLight",
+    ("smrFISGrass",) : "grass",
+    ("smrNTapron",) : "smrApron",
 
 }
 
