@@ -1,6 +1,10 @@
-import csv, glob,os,re,subprocess
+import csv, glob,os,re,subprocess,sys
 from PIL import Image, ImageDraw, ImageFont
-os.chdir(os.path.join(os.pardir, os.pardir, os.pardir, os.pardir))
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
+main_dir = os.path.join(current_dir, os.pardir, os.pardir, os.pardir, os.pardir)
+os.chdir(main_dir)
+print(main_dir)
 def conv_rgb(colour : int) -> tuple[int,int,int]:
     red = int(colour) & 0xff
     green = (int(colour) >> 8) & 0xff
@@ -11,7 +15,7 @@ to_compress = {
     ("OCASregion", "smrBuilding", "smrDisused", "smrRunway", "smrTaxiway", "blackBackground") : "Black",
     ("smrHHcompass",) : "smrCompassbase",
     ("smrGDtaxiway", "smrJJtaxiway", "smrSCOTaxiway", "smrMilTaxiway") : "smrTaxiwayDarker",
-    ("smrGDrunway", "smrGrey", "smrSCORunway") : "smrGrey",
+    ("smrGDrunway", "smrSCORunway") : "smrGrey",
     ("smrMilRoad",) : "smrRoad",
     ("smrBlue", "blueBackground") : "Blue",
     ("smrSCOGrass",) : "smrGreen",
@@ -71,15 +75,25 @@ def check() -> None:
 def sort_colours() -> None:                 
     with open("Colours.txt","r")as in_file:
         data = in_file.readlines()
+
+    original_defs = {}
+    
+
+    
+
+
     data.insert(0, ";Misc\n")
     replaced_lines = []
     for line in data:
         if line.startswith("#define"):
             _, col, def_ =  line.split(" ")
+            original_defs[col] = def_
             if col.lower() in flattened_map:
                 col = flattened_map[col.lower()]
             line = line = " ".join(("#define",col,def_))
         replaced_lines.append(line)
+
+    
     
     section_pattern = re.compile(r'^;(\S.*$)')
     sections = {}
@@ -124,15 +138,28 @@ def sort_colours() -> None:
             if line in comments:
                 sorted_sections[section].extend(comments[line])
 
+        
+    lines = []
+    prev_line ="a b c"
+    for i,section in enumerate(sorted_sections):
+        if i != 0:
+            lines.append(f"\n{section}\n")
+        for line in sorted_sections[section]:
+            if line != "":
+                
+                if prev_line.split(" ")[1] == line.split(" ")[1]:
+                    if prev_line.split(" ")[1] in original_defs:
+                        lines.pop()
+                        lines.append(f"#define {prev_line.split(' ')[1]} {original_defs[prev_line.split(' ')[1]]}")
+                else:
+                    lines.append(f"{line}\n")
+            prev_line = line
+            
+
 
     
     with open("Colours.txt", "w") as file:
-        for i,section in enumerate(sorted_sections):
-            if i != 0:
-                file.write(f"\n{section}\n")
-            for line in sorted_sections[section]:
-                if line != "":
-                    file.write(f"{line}\n")
+        file.writelines(lines)
         
 def remove_unused() -> None:
     check()
@@ -263,10 +290,16 @@ def remove_blank_ends() -> None:
                 if os.path.isfile(file_path):
                     with open(file_path,"r")as file:
                         lines = file.readlines()
-                    while lines and lines[-1].strip() == "":
-                        lines.pop()
-                    with open(file_path,"w")as file:
-                        file.writelines(lines)
+                    for i in range(len(lines) - 1, -1, -1):
+                        if lines[i].strip():
+                            break
+                    lines = lines[:i+1]
+                    with open(file_path, 'w') as file:
+                        for i, line in enumerate(lines):
+                            if i < len(lines) - 1:
+                                file.write(line)
+                            else:
+                                file.write(line.rstrip('\n'))
 
 
     for root,dirs,_ in os.walk("_data\Closed Airfields"):
@@ -277,35 +310,58 @@ def remove_blank_ends() -> None:
                 if os.path.isfile(file_path):
                     with open(file_path,"r")as file:
                         lines = file.readlines()
-                    while lines and lines[-1].strip() == "":
-                        lines.pop()
-                    with open(file_path,"w")as file:
-                        file.writelines(lines)
+                    for i in range(len(lines) - 1, -1, -1):
+                        if lines[i].strip():
+                            break
+                    lines = lines[:i+1]
+                    with open(file_path, 'w') as file:
+                        for i, line in enumerate(lines):
+                            if i < len(lines) - 1:
+                                file.write(line)
+                            else:
+                                file.write(line.rstrip('\n'))
 
     for path in glob.glob(os.path.join("Misc Geo","*txt")):
         with open(path,"r")as file:
             lines = file.readlines()
-        while lines and lines[-1].strip() == "":
-            lines.pop()
-        with open(path,"w")as file:
-            file.writelines(lines)
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip():
+                break
+        lines = lines[:i+1]
+        with open(path, 'w') as file:
+            for i, line in enumerate(lines):
+                if i < len(lines) - 1:
+                    file.write(line)
+                else:
+                    file.write(line.rstrip('\n'))
 
     for path in glob.glob(os.path.join("Misc Other","*txt")):
         with open(path,"r")as file:
             lines = file.readlines()
-        while lines and lines[-1].strip() == "":
-            lines.pop()
-        with open(path,"w")as file:
-            file.writelines(lines)
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip():
+                break
+        lines = lines[:i+1]
+        with open(path, 'w') as file:
+            for i, line in enumerate(lines):
+                if i < len(lines) - 1:
+                    file.write(line)
+                else:
+                    file.write(line.rstrip('\n'))
 
     for path in glob.glob(os.path.join("Misc Regions","*txt")):
         with open(path,"r")as file:
             lines = file.readlines()
-        while lines and lines[-1].strip() == "":
-            lines.pop()
-        with open(path,"w")as file:
-            file.writelines(lines)
-
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i].strip():
+                break
+        lines = lines[:i+1]
+        with open(path, 'w') as file:
+            for i, line in enumerate(lines):
+                if i < len(lines) - 1:
+                    file.write(line)
+                else:
+                    file.write(line.rstrip('\n'))
 
 
     print("Removed Blank Ends")
@@ -378,11 +434,13 @@ def clean_up() -> None:
 if __name__ == "__main__":
     compress_colours()
     sort_colours()
-    remove_blank_ends()
-    sf_check = compile_sf()
+    if not compile_sf():
+        sys.exit()
     remove_unused()
+    remove_blank_ends()
+    if not compile_sf():
+        sys.exit()
     check()
-    sf_check = compile_sf()
     #close_colours(display=True)
     clean_up()
     print("Completed")
